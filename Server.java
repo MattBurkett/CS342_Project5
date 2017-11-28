@@ -10,6 +10,7 @@ import javax.swing.*;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Vector;
 
 public class Server extends JFrame implements ActionListener {
 
@@ -24,7 +25,7 @@ public class Server extends JFrame implements ActionListener {
   boolean serverContinue;
   ServerSocket serverSocket;
 
-  private ArrayList<String> userNameList; //unique list of all users in chat room
+  private Vector<String> userNameList; //unique list of all users in chat room
   private HashSet<PrintWriter> writers;
 
   // set up Server
@@ -60,7 +61,7 @@ public class Server extends JFrame implements ActionListener {
     setSize(500, 250);
     setVisible(true);
 
-    userNameList = new ArrayList<String>();
+    userNameList = new Vector<String>();
     writers = new HashSet<PrintWriter>();
   } // end Server constructor
 

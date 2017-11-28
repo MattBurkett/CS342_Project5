@@ -1,4 +1,3 @@
-
 //Sean Walker - swalke30
 //Bilal V
 //CS 342 Program 5 - Networked Chat with RSA Encryption/Decryption
@@ -7,7 +6,10 @@ import java.net.*;
 import java.io.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Vector;
+import javax.crypto.EncryptedPrivateKeyInfo;
 import javax.swing.*;
+import java.util.*;
 
 public class Client extends JFrame implements ActionListener {
   // GUI items
@@ -22,9 +24,13 @@ public class Client extends JFrame implements ActionListener {
   // Network Items
   boolean connected;
   Socket echoSocket;
-  PrintWriter out;
-  BufferedReader in;
+  ObjectOutputStream out;
+  ObjectInputStream in;
   String userName;
+  Vector <String> userNameList;
+  Vector <Integer> publicKeyList;
+  int privateKey;
+  int publicKey;
 
   // set up GUI
   public Client() {
@@ -86,22 +92,29 @@ public class Client extends JFrame implements ActionListener {
   // handle button event
   public void actionPerformed(ActionEvent event) {
     if (connected && (event.getSource() == sendButton || event.getSource() == message)) {
-      doSendMessage(userName + ": " + message.getText());
+      Vector<String> recipientList = new Vector<String>();
+            //recipientList.add(joe, sam, blablabla);///
+            //Encryptor newEnc= new Encryptor(msg);
+            //newEnc.addRecipients(recipientList);
+            //doSendMessage(newEnc); 
+      Encryption newMessage = new Encryption(userName + ": " + message.getText(), recipientList, false);
+      doSendMessage(newMessage);
     } else if (event.getSource() == connectButton) {
       doManageConnection();
     }
   }
 
-  public void doSendMessage(String text) {
-    //try
-    //{
-    out.println(text);
-    //history.insert(text, 0);
-    //}
-    //catch (IOException e)
-    //{
-    //history.insert ("Error in processing message ", 0);
-    //}
+  public void doSendMessage(Object messageObject) {
+    try
+    {
+      out.writeObject(messageObject);
+      out.flush();
+      //history.insert(text, 0);
+    }
+    catch (IOException e)
+    {
+      history.insert ("Error in processing message ", 0);
+    }
   }
 
   public void doManageConnection() {
@@ -113,11 +126,16 @@ public class Client extends JFrame implements ActionListener {
         userName = enterUserName.getText();
         portNum = Integer.parseInt(portInfo.getText());
         echoSocket = new Socket(machineName, portNum);
-        out = new PrintWriter(echoSocket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+        out = new ObjectOutputStream(echoSocket.getOutputStream());
+        in = new ObjectInputStream(new ObjectInputStream(echoSocket.getInputStream()));
         sendButton.setEnabled(true);
         connected = true;
-        doSendMessage("newUser: " + userName);
+        //to do: recieve user name from server
+        Vector<Integer> publicPrivateKeys = Encryption.generateKeys();
+        publicKey = publicPrivateKeys.get(0);
+        privateKey = publicPrivateKeys.get(1);
+        String newUserString = "newUser: " + userName + " " + publicKey;
+        doSendMessage(newUserObject);
         connectButton.setText("Disconnect from Server");
         new recieveInput(echoSocket);
       } catch (NumberFormatException e) {
@@ -163,11 +181,18 @@ public class Client extends JFrame implements ActionListener {
             while ((inputLine = in.readLine()) != null) {
               //inputLine = in.readLine();
               history.append(inputLine + "\n");
+
+              if(inputLine.contains("newUser: "))
+              {
+                //add to userNameList
+                //add to key list
+                
+              }
             }
         }catch(IOException e){
           System.out.println("exception");
         }
-        }
+      }
   }
   
 
