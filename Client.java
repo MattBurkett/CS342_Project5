@@ -1,5 +1,7 @@
+
 //Sean Walker - swalke30
-//Bilal V
+//Bilal V 
+//Matt B
 //CS 342 Program 5 - Networked Chat with RSA Encryption/Decryption
 
 import java.net.*;
@@ -18,6 +20,7 @@ public class Client extends JFrame implements ActionListener {
   JTextField machineInfo;
   JTextField portInfo;
   JTextField message;
+  JTextField sendMessageTo;
   JTextField enterUserName;
   JTextArea history;
 
@@ -27,14 +30,19 @@ public class Client extends JFrame implements ActionListener {
   ObjectOutputStream out;
   ObjectInputStream in;
   String userName;
-  Vector <String> userNameList;
-  Vector <Integer> publicKeyList;
-  int privateKey;
-  int publicKey;
+  Vector<String> userNameList;
+  Vector<Key> publicKeyList;
+  Key privateKey; //(d,n)
+  Key publicKey; //(e,n)
+  int numberOfUsers;
 
   // set up GUI
   public Client() {
     super("Echo Client");
+
+    publicKeyList = new Vector<Key>();
+    numberOfUsers = 0;
+    userNameList = new Vector<String>();
 
     // get content pane and set its layout
     Container container = getContentPane();
@@ -42,7 +50,7 @@ public class Client extends JFrame implements ActionListener {
 
     // set up the North panel
     JPanel upperPanel = new JPanel();
-    upperPanel.setLayout(new GridLayout(6, 1));
+    upperPanel.setLayout(new GridLayout(7, 3));
     container.add(upperPanel, BorderLayout.NORTH);
 
     // create buttons
@@ -57,6 +65,11 @@ public class Client extends JFrame implements ActionListener {
     message = new JTextField("");
     message.addActionListener(this);
     upperPanel.add(message);
+
+    upperPanel.add(new JLabel("Send message to: "), JLabel.RIGHT);
+    sendMessageTo = new JTextField("");
+    message.addActionListener(this);
+    upperPanel.add(sendMessageTo);
 
     sendButton = new JButton("Send Message");
     sendButton.addActionListener(this);
@@ -82,40 +95,66 @@ public class Client extends JFrame implements ActionListener {
     setSize(500, 250);
     setVisible(true);
 
-  } // end CountDown constructor
+  } // end constructor
 
   public static void main(String args[]) {
     Client application = new Client();
     application.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
   }
 
+  public Vector<String> collectRecipiants() {
+    String[] namesEnteredInSendMessageToBox = sendMessageTo.getText().split(",");
+    Vector<String> recipientList = new Vector<String>();
+
+    for (String username : namesEnteredInSendMessageToBox) {
+      recipientList.add(username);
+    }
+
+    return recipientList;
+  }//end collectRecipiants()
+
   // handle button event
   public void actionPerformed(ActionEvent event) {
     if (connected && (event.getSource() == sendButton || event.getSource() == message)) {
-      Vector<String> recipientList = new Vector<String>();
-            //recipientList.add(joe, sam, blablabla);///
-            //Encryptor newEnc= new Encryptor(msg);
-            //newEnc.addRecipients(recipientList);
-            //doSendMessage(newEnc); 
-      Encryption newMessage = new Encryption(userName + ": " + message.getText(), recipientList, false);
-      doSendMessage(newMessage);
+      if (message.getText().equals("whoIsHere")) { //client sends string to find out who is in chat room
+        System.out.println("sending who is here message from client");
+        doSendMessage("whoIsHere");
+      } else {
+        //make encryption object and send it...
+        String[] namesEnteredInSendMessageToBox = sendMessageTo.getText().split(",");
+        Vector<String> recipientList = new Vector<String>();
+
+        for (String username : namesEnteredInSendMessageToBox) {
+          recipientList.add(username);
+        }
+        Encryption newEncryptedMessage = new Encryption(userName + ": " + message.getText(), recipientList,
+            this.privateKey);
+        try {
+          System.out.println("sending message via out");
+          out.writeObject(newEncryptedMessage);
+          out.flush();
+        } catch (IOException e) {
+          history.insert("cant send ", 0);
+        }
+      }
     } else if (event.getSource() == connectButton) {
       doManageConnection();
     }
   }
 
+  public Vector<String> retrieveAndParseRecipientList() {
+    Vector<String> recipientList = new Vector<String>();
+    return recipientList;
+  }
+
   public void doSendMessage(Object messageObject) {
-    try
-    {
+    try {
       out.writeObject(messageObject);
       out.flush();
-      //history.insert(text, 0);
+    } catch (IOException e) {
+      history.insert("Error in processing message ", 0);
     }
-    catch (IOException e)
-    {
-      history.insert ("Error in processing message ", 0);
-    }
-  }
+  }//end doSendMessage()
 
   public void doManageConnection() {
     if (connected == false) {
@@ -126,18 +165,22 @@ public class Client extends JFrame implements ActionListener {
         userName = enterUserName.getText();
         portNum = Integer.parseInt(portInfo.getText());
         echoSocket = new Socket(machineName, portNum);
-        out = new ObjectOutputStream(echoSocket.getOutputStream());
-        in = new ObjectInputStream(new ObjectInputStream(echoSocket.getInputStream()));
+
+        out = new ObjectOutputStream(echoSocket.getOutputStream()); //causes freeze
+        in = new ObjectInputStream(echoSocket.getInputStream());
         sendButton.setEnabled(true);
         connected = true;
         //to do: recieve user name from server
-        Vector<Integer> publicPrivateKeys = Encryption.generateKeys();
-        publicKey = publicPrivateKeys.get(0);
-        privateKey = publicPrivateKeys.get(1);
-        String newUserString = "newUser: " + userName + " " + publicKey;
-        doSendMessage(newUserObject);
+        Vector<Key> publicPrivateKeys = Encryption.generateKeys();
+        this.publicKey = publicPrivateKeys.get(0);
+        this.privateKey = publicPrivateKeys.get(1);
+        String newUserString = "newUser: " + userName + "," + Integer.toString(publicKey.getX()) + ","
+            + Integer.toString(publicKey.getY());
+        System.out.println(newUserString);
+        out.writeObject(newUserString);
+        out.flush();
         connectButton.setText("Disconnect from Server");
-        new recieveInput(echoSocket);
+        new recieveInput();
       } catch (NumberFormatException e) {
         history.insert("Server Port must be an integer\n", 0);
       } catch (UnknownHostException e) {
@@ -160,41 +203,47 @@ public class Client extends JFrame implements ActionListener {
     }
   }//end doManageConnection()
 
-  class recieveInput extends Thread{
-    Socket thisSocket;
-    PrintWriter out;
-    BufferedReader in;
+  class recieveInput extends Thread {
+    //Socket thisSocket;
+    //ObjectOutputStream out;
+    //ObjectInputStream in;
 
-    public recieveInput(Socket echoSocket){
-      thisSocket = echoSocket;
+    public recieveInput(/*Socket echoSocket*/) {
+      //thisSocket = echoSocket;
       start();
     }
+
     public void run() {
-      try{
-          // Make connection and initialize streams
-          BufferedReader in = new BufferedReader(new InputStreamReader(thisSocket.getInputStream()));
-          PrintWriter out = new PrintWriter(thisSocket.getOutputStream(), true);
-      
-          // Process all messages from server, according to the protocol.
-          System.out.println("here");
-          String inputLine;
-            while ((inputLine = in.readLine()) != null) {
-              //inputLine = in.readLine();
-              history.append(inputLine + "\n");
+      try {
+        // Make connection and initialize streams
 
-              if(inputLine.contains("newUser: "))
-              {
-                //add to userNameList
-                //add to key list
-                
-              }
+        // Process all messages from server, according to the protocol.
+        Object input;
+        while ((input = in.readObject()) != null) {
+          if (input.getClass().equals(String.class)) {
+            String inputString = (String) input;
+            if (inputString.contains("newUser: ")) {
+              history.insert(inputString, 0);
+
+              //add key to key list here
+              String[] elementsOfNewUserString = inputString.split(","); //newUser: <NAME>, first # of key, second # of key
+              userNameList.add(elementsOfNewUserString[0].substring(9)); //add user name to username list
+              numberOfUsers++;
+              int x = Integer.parseInt(elementsOfNewUserString[1]);
+              int y = Integer.parseInt(Character.toString(elementsOfNewUserString[2].charAt(0)));
+              publicKeyList.add(new Key(x, y));
+            } else {
+              history.insert(inputString, 0);
             }
-        }catch(IOException e){
-          System.out.println("exception");
-        }
+
+          } else {
+            Encryption inputEncryption = (Encryption) input;
+            history.insert(inputEncryption.getMessage() + "\n", 0);
+          }
+        } //end while ((input = in.readObject()) != null)
+      } catch (Exception e) {
+        System.out.println(e);
       }
-  }
-  
-
-
+    }//end run()
+  }//end recieveInput()
 } // end class Server

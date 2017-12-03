@@ -1,11 +1,15 @@
+
 //Sean Walker - swalke30
 //Bilal V - 
+//Matt B
 //CS 342 Program 5 - Networked Chat with RSA Encryption/Decryption
 
 import java.net.*;
 import java.io.*;
 import java.awt.*;
 import java.awt.event.*;
+
+import javax.net.ssl.ExtendedSSLSession;
 import javax.swing.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -13,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 public class Server extends JFrame implements ActionListener {
-
   // GUI items
   JButton ssButton;
   JLabel machineInfo;
@@ -26,11 +29,14 @@ public class Server extends JFrame implements ActionListener {
   ServerSocket serverSocket;
 
   private Vector<String> userNameList; //unique list of all users in chat room
-  private HashSet<PrintWriter> writers;
+  private Vector<ObjectOutputStream> writers;
+  private Vector<Key> publicKeyList;
 
   // set up Server
   public Server() {
     super("Echo Server");
+
+    publicKeyList = new Vector<Key>();
 
     // get content pane and set its layout
     Container container = getContentPane();
@@ -62,7 +68,7 @@ public class Server extends JFrame implements ActionListener {
     setVisible(true);
 
     userNameList = new Vector<String>();
-    writers = new HashSet<PrintWriter>();
+    writers = new Vector<ObjectOutputStream>();
   } // end Server constructor
 
   public static void main(String args[]) {
@@ -119,14 +125,12 @@ public class Server extends JFrame implements ActionListener {
       }
     }//end run()
   }//end ConnectionThread class
-  
 
   class CommunicationThread extends Thread {
-    //private boolean serverContinue = true;
     private Socket clientSocket;
     private Server server;
-    private PrintWriter out;
-    private BufferedReader in;
+    private ObjectOutputStream out;
+    private ObjectInputStream in;
 
     public CommunicationThread(Socket clientSoc, Server ec3) {
       clientSocket = clientSoc;
@@ -140,45 +144,61 @@ public class Server extends JFrame implements ActionListener {
       int numberOfUsers = 0;
 
       try {
-        out = new PrintWriter(clientSocket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        out = new ObjectOutputStream(clientSocket.getOutputStream());
+        in = new ObjectInputStream(clientSocket.getInputStream());
 
-        String inputLine;
+        try {
 
-        while ((inputLine = in.readLine()) != null) {
-          server.history.insert(inputLine + "\n", 0);
-          //out.println(inputLine);
+          Object input;
+          while ((input = in.readObject()) != null) {
+            //check first if the object is a string, if so, it needs to be broadcasted to all clients
+            if (input.getClass().equals(String.class)) {
+              String inputString = (String) input;
+              if (inputString.contains("newUser: ")) {
+                System.out.println("newUser Server section: ");
+                history.insert(inputString + "\n", 0);
+                //add key to keylist
+                String[] elementsOfNewUserString = inputString.split(",");
+                userNameList.add(elementsOfNewUserString[0].substring(9));
+                numberOfUsers++;
 
-          if (inputLine.contains("newUser: ")) {
-            userNameList.add(numberOfUsers, inputLine.substring(9));
-            numberOfUsers++;
-            
+                for (ObjectOutputStream writer : writers) { //tell all connected clients there's a new user
+                  System.out.println("sending to a writer");
+                  writer.writeObject(inputString + "\n");
+                }
 
-            for (PrintWriter writer : writers) { //tell all connected clients there's a new user
-              System.out.println("sending to a writer");
-              writer.println(inputLine + "\n");
+                writers.add(out);
+                System.out.println("added new ObjectOutputStream to writers");
+              } //end if new user
+              else if (inputString.contains("whoIsHere")) {
+                System.out.println("in whoishere");
+                String userNameListToSend = null;
+                for (String userName : userNameList) {
+                  userNameListToSend = userNameListToSend + userName + ", ";
+                }
+                out.writeObject(userNameListToSend);
+              } else if (inputString.equals("Bye."))
+                break;
+              else if (inputString.equals("End Server."))
+                server.serverContinue = false;
+            } else if (input.getClass().equals(Encryption.class)) {//not a string. does not need to be broadcasted to all clients. get recipiants list and send to recipiants.
+              System.out.println("if recieved encryption class");
+              Encryption inputEncryption = (Encryption) input;
+
+              for (String recipient : inputEncryption.getRecipientList()) { //send message to recipiants
+                history.insert(inputEncryption.getMessage(), 0);
+                int writerIndexForUser = userNameList.indexOf(recipient);
+                System.out.println("writerIndexForUser: " + writerIndexForUser);
+                writers.elementAt(writerIndexForUser).writeObject(inputEncryption);
+              }
             }
+            //server.history.insert(inputObject + "\n", 0);
+            //out.println(inputLine);
 
-            writers.add(out);
-          }
-          
-          else if (inputLine.contains("whoIsHere")) {
-            for (String userName : userNameList) {
-              out.println(userName);
-            }
-          }
-          else if (inputLine.equals("Bye."))
-            break;
-
-          else if (inputLine.equals("End Server."))
-            server.serverContinue = false;
-
-          else
-            for (PrintWriter writer : writers) { //send message to all connected clients
-              writer.println(inputLine);
-            }
+          } //end while ((inputObject = in.readObject()) != null)
+        } catch (ClassNotFoundException e) {
+          System.out.println("ClassNotFoundException");
         }
-
         out.close();
         in.close();
         clientSocket.close();
