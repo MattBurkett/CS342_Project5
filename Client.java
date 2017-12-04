@@ -174,8 +174,8 @@ public class Client extends JFrame implements ActionListener {
         Vector<Key> publicPrivateKeys = Encryption.generateKeys();
         this.publicKey = publicPrivateKeys.get(0);
         this.privateKey = publicPrivateKeys.get(1);
-        String newUserString = "newUser: " + userName + "," + Integer.toString(publicKey.getX()) + ","
-            + Integer.toString(publicKey.getY());
+        String newUserString = "newUser: " + userName + "," + Long.toString(publicKey.getX()) + ","
+            + Long.toString(publicKey.getY());
         System.out.println(newUserString);
         out.writeObject(newUserString);
         out.flush();
@@ -229,8 +229,8 @@ public class Client extends JFrame implements ActionListener {
               String[] elementsOfNewUserString = inputString.split(","); //newUser: <NAME>, first # of key, second # of key
               userNameList.add(elementsOfNewUserString[0].substring(9)); //add user name to username list
               numberOfUsers++;
-              int x = Integer.parseInt(elementsOfNewUserString[1]);
-              int y = Integer.parseInt(Character.toString(elementsOfNewUserString[2].charAt(0)));
+              long x = Long.parseLong(elementsOfNewUserString[1]);
+              long y = Long.parseLong(Character.toString(elementsOfNewUserString[2].charAt(0)));
               publicKeyList.add(new Key(x, y));
             } else {
               history.insert(inputString, 0);

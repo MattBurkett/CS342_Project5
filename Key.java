@@ -10,19 +10,19 @@ import javax.swing.*;
 import java.util.*;
 
 public class Key implements Serializable {
-	private int x;
-	private int y;
+	private long x; // d or e
+	private long y; // n
 
-	public Key(Integer x, Integer y) {
+	public Key(long x, long y) {
 		this.x = x;
 		this.y = y;
 	}
 
-	public int getX() {
+	public long getX() {
 		return x;
 	}
 
-	public int getY() {
+	public long getY() {
 		return y;
 	}
 }
