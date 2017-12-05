@@ -157,14 +157,25 @@ public class Server extends JFrame implements ActionListener {
               if (inputString.contains("newUser: ")) {
                 System.out.println("newUser Server section: ");
                 history.insert(inputString + "\n", 0);
-                //add key to keylist
+                //add username to username list and key to keylist:
                 String[] elementsOfNewUserString = inputString.split(",");
+
                 userNameList.add(elementsOfNewUserString[0].substring(9));
                 numberOfUsers++;
+
+                publicKeyList.add(
+                    new Key(Long.parseLong(elementsOfNewUserString[1]), Long.parseLong(elementsOfNewUserString[2])));
 
                 for (ObjectOutputStream writer : writers) { //tell all connected clients there's a new user
                   System.out.println("sending to a writer");
                   writer.writeObject(inputString + "\n");
+                }
+
+                for (String name : userNameList) {
+                  int indexOfUserName = userNameList.indexOf(name);
+                  inputString = "newUser: " + name + "," + publicKeyList.get(indexOfUserName).getX() + ","
+                      + publicKeyList.get(indexOfUserName).getY();
+                  out.writeObject(inputString + "\n");
                 }
 
                 writers.add(out);
@@ -172,7 +183,7 @@ public class Server extends JFrame implements ActionListener {
               } //end if new user
               else if (inputString.contains("whoIsHere")) {
                 System.out.println("in whoishere");
-                String userNameListToSend = null;
+                String userNameListToSend = new String();
                 for (String userName : userNameList) {
                   userNameListToSend = userNameListToSend + userName + ", ";
                 }
@@ -186,7 +197,6 @@ public class Server extends JFrame implements ActionListener {
               Encryption inputEncryption = (Encryption) input;
 
               for (String recipient : inputEncryption.getRecipientList()) { //send message to recipiants
-                history.insert(inputEncryption.getMessage(), 0);
                 int writerIndexForUser = userNameList.indexOf(recipient);
                 System.out.println("writerIndexForUser: " + writerIndexForUser);
                 writers.elementAt(writerIndexForUser).writeObject(inputEncryption);
