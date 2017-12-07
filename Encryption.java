@@ -14,16 +14,8 @@ import javax.swing.*;
 import java.util.*;
 
 public class Encryption implements Serializable {
-	private static final Integer primes [] = 
-		{3666233, 5170637, 4456451, 6830029, 3783541, 5021531, 
-		3345457, 1123379, 4125497, 3643411, 5006543, 4403053, 
-		2449729, 8084411, 3126083, 9657247, 3908467, 7970257, 
-		3715783, 4562693, 4694999, 6087707, 5514469, 3317177, 
-		5955329, 5624743, 5216777, 6413153, 7701923, 9315689, 
-		6819931, 5643851, 4491329, 2618107, 7215601, 2387249, 
-		8100133, 8860601, 8322403, 8199913, 3286301, 5581591, 
-		3994619, 3480073, 3733649, 9082691, 9290233, 6748459, 
-		6070907, 2873417};
+	private static final String primeFile = "primes.txt";
+	private static ArrayList<Integer> primes;
 	private static final int blockSize = 4;
 	private Vector<String> recipientList; //who is the message for
 	private Vector<Vector<BigInteger>> encryptedMessages;
@@ -69,11 +61,27 @@ public class Encryption implements Serializable {
 		}
 	}
 
+	private static void readPrimes(String file){
+		primes = new ArrayList<Integer>();
+		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				primes.add(Integer.valueOf(line));
+			}
+		} catch (IOException E) {
+			System.out.println("File not found: " + file);
+		}
+	}
+
 	public static Vector<Key> generateKeys(){
 		long p = 0, q = 0;
 		int i = 0;
 		Random rng = new Random();
-		ArrayList<Integer> local_primes = new ArrayList<Integer>(Arrays.asList(Encryption.primes));
+		ArrayList<Integer> local_primes;
+		if (primes == null)
+			readPrimes(primeFile);
+
+		local_primes = new ArrayList<Integer>(primes);
 
 		i = rng.nextInt(local_primes.size());
 		p = local_primes.remove(i);
@@ -81,6 +89,16 @@ public class Encryption implements Serializable {
 		q = local_primes.remove(i);
 
 		return Encryption.generateKeys(p, q);
+	}
+
+	public static Vector<Key> generateKeys(String primesFile){
+		readPrimes(primesFile);
+		return generateKeys();
+	}
+
+	public static Vector<Key> generateKeys(ArrayList<Integer> primes){
+		Encryption.primes = primes;
+		return generateKeys();
 	}
 
 	public static Vector<Key> generateKeys(long p, long q) {
@@ -105,9 +123,6 @@ public class Encryption implements Serializable {
 		BigInteger Bd = BigInteger.valueOf(d);
 		BigInteger Bphi = BigInteger.valueOf(phi);
 
-		//System.out.println("Phi: " + phi);
-		//System.out.println("e*d mod Phi: " + ( Be.multiply(Bd) ).mod(Bphi) );
-
 		Key publicKey = new Key(e, n);
 		Key privateKey = new Key(d, n);
 		keys.add(publicKey);
@@ -127,7 +142,10 @@ public class Encryption implements Serializable {
 			}
 			char reversed [] = decryptedBlock.toCharArray();
 			for(int i = Encryption.blockSize - 1; i >= 0; i--)
-				decryptedMessage += reversed[i];
+				if(reversed[i] == '\0')
+					continue;
+				else
+					decryptedMessage += reversed[i];
 
 		}
 		return decryptedMessage;
@@ -196,15 +214,21 @@ public class Encryption implements Serializable {
 	//used for testing, should execute client or server
 	public static void main(String [] args){
 		Vector<Key> keys = Encryption.generateKeys();
-		Key Public = keys.get(0);
-		Key Private = keys.get(1);
+		Key mattPublic = keys.get(0);
+		Key mattPrivate = keys.get(1);
 
-		System.out.println("public : " + Public.getX() + ", " + Public.getY());
-		System.out.println("private: " + Private.getX() + ", " + Private.getY());
+		keys = Encryption.generateKeys();
+		Key seanPublic = keys.get(0);
+		Key seanPrivate = keys.get(1);
+
+		System.out.println("public  (Matt): " + mattPublic.getX() + ", " + mattPublic.getY());
+		System.out.println("private (Matt): " + mattPrivate.getX() + ", " + mattPrivate.getY());
+		System.out.println("public  (Sean): " + seanPublic.getX() + ", " + seanPublic.getY());
+		System.out.println("private (Sean): " + seanPrivate.getX() + ", " + seanPrivate.getY());
 
 
 		Vector<Key> recipientKeys = new Vector<Key>();
-		recipientKeys.add(Public);
+		recipientKeys.add(mattPublic);
 
 		Vector<String> recipientNames = new Vector<String>();
 		recipientNames.add("Matt");
@@ -213,7 +237,7 @@ public class Encryption implements Serializable {
 
 		System.out.println("Encrypting message: " + message);
 		Encryption secret = new Encryption(message, recipientNames, recipientKeys);
-		System.out.println("Decrypted message: " + secret.decrypt(Private, "Matt"));
+		System.out.println("Decrypted message: " + secret.decrypt(mattPrivate, "Matt"));
 		
 		return;
 	}
