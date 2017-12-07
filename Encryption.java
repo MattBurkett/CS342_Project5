@@ -1,7 +1,7 @@
 
 //Sean Walker - swalke30
-//Bilal V - 
-//Matt B
+//Bilal Vajhi - bvajhi2
+//Matt Burkett - mburke24
 //CS 342 Program 5 - Networked Chat with RSA Encryption/Decryption
 
 import java.net.*;
@@ -31,9 +31,9 @@ public class Encryption implements Serializable {
 	}
 
 	public void Encrypt(String message, Vector<String> recipiantList, Vector<Key> publicKeys) {
-		System.out.println("\tEncrypting!");
+		System.out.println("Encrypting!");
 		for (Key k : publicKeys)
-			System.out.println("\tkey: (" + k.getX() + "," + k.getY() + ")");
+			System.out.println("\tPublic key: (" + k.getX() + "," + k.getY() + ")");
 		System.out.println("\trecipiants: " + recipiantList);
 		this.recipientList = recipiantList;
 		this.encryptedMessages = new Vector<Vector<BigInteger>>();
@@ -75,6 +75,35 @@ public class Encryption implements Serializable {
 		}
 	}
 
+	//https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
+	private static boolean checkPrime(long n, int k){
+		long r = 0, d = n-1;
+		Random rng = new Random();
+		if((n & 0x1) == 0)
+			return false;
+		while((d & 0x1) == 0){
+			r++;
+			d = d >> 1;
+		}
+		for(int i = 0; i < k; i++){
+			long a = rng.nextLong() % (n-3) + 2; // [2, n-2]
+			long x = powerMod(BigInteger.valueOf(a),d,n).longValue();
+			if(x == 1 || x == n-1)
+				continue;
+			int j;
+			for(j = 0; j < r-1; j++){
+				x = powerMod(BigInteger.valueOf(x),2,n).longValue();
+				if(x == 1)
+					return false;
+				if(x == n-1)
+					break;
+			}
+			if(j >= r-1)
+				return false;
+		}
+		return true;
+	}
+
 	public static Vector<Key> generateKeys(){
 		long p = 0, q = 0;
 		int i = 0;
@@ -104,10 +133,20 @@ public class Encryption implements Serializable {
 	}
 
 	public static Vector<Key> generateKeys(long p, long q) {
+		final int primeAccuracy = 20;
 		long n = 0, d = 0, e = 0, phi = 0;
 		int i = 0;
 		Random rng = new Random();
 		Vector<Key> keys = new Vector<Key>();
+
+		if(!checkPrime(p, primeAccuracy)){
+			System.out.println("not prime!: " + p);
+			System.exit(-1);
+		}
+		if(!checkPrime(q, primeAccuracy)){
+			System.out.println("not prime!: " + q);	
+			System.exit(-1);		
+		}
 
 		n = p * q;
 		phi = (p - 1) * (q - 1);
@@ -137,10 +176,12 @@ public class Encryption implements Serializable {
 
 	public String decrypt(Key key, String name) {
 		System.out.println("Decrypting!");
-		System.out.println("\tkey: (" + key.getX() + "," + key.getY() + ")");
-		System.out.println("\trecipiant: " + name);
+		System.out.println("\tPrivate key: (" + key.getX() + "," + key.getY() + ")");
+		System.out.println("\tKey Owner  : " + name);
 
 		int index = recipientList.indexOf(name);
+		if(index == -1)
+			return "Cannot Decrypt, " + name + " is not in the recipiant list";
 		String decryptedMessage = "";
 		for (BigInteger block : encryptedMessages.get(index)) {
 			String decryptedBlock = "";
@@ -248,6 +289,7 @@ public class Encryption implements Serializable {
 		System.out.println("Encrypting message: " + message);
 		Encryption secret = new Encryption(message, recipientNames, recipientKeys);
 		System.out.println("Decrypted message: " + secret.decrypt(mattPrivate, "Matt"));
+		System.out.println("Decrypted message: " + secret.decrypt(seanPrivate, "Matt"));
 
 		return;
 	}

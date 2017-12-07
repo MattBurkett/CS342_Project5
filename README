@@ -1,0 +1,9 @@
+Authors: 
+Sean Walker - swalke30
+Bilal Vajhi - bvajhi2
+Matt Burkett - mburke24
+CS 342 Program 5 - Networked Chat with RSA Encryption/Decryption
+
+File->Import Primes: Primes must be >= 101 because of checkPrime() doesn't work for small 'n'
+Send message to: Should be comma seperated list of recipents with no spaces
+	example: "Matt,Sean,Bilal"

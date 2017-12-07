@@ -1,7 +1,7 @@
 
 //Sean Walker - swalke30
-//Bilal Vijha - 
-//Matt B
+//Bilal Vajhi - bvajhi2
+//Matt Burkett - mburke24
 //CS 342 Program 5 - Networked Chat with RSA Encryption/Decryption
 
 import java.net.*;
@@ -24,7 +24,6 @@ public class Server extends JFrame implements ActionListener {
   JTextArea history;
   private boolean running;
 
-  JMenuBar menuBar;
   JMenuItem generatePrimesMenuItem, importPrimesFileMenuItem;
   JMenu menu;
 
@@ -46,18 +45,6 @@ public class Server extends JFrame implements ActionListener {
     Container container = getContentPane();
     container.setLayout(new FlowLayout());
 
-    menuBar = new JMenuBar();
-    menu = new JMenu("File");
-    menuBar.add(menu);
-    generatePrimesMenuItem = new JMenuItem("Generate Primes");
-    importPrimesFileMenuItem = new JMenuItem("Import Primes File");
-    //primesMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1, ActionEvent.ALT_MASK));
-    //primesMenuItem.getAccessibleContext().setAccessibleDescription("Generate Primes");
-    generatePrimesMenuItem.addActionListener(this);
-    importPrimesFileMenuItem.addActionListener(this);
-    menu.add(generatePrimesMenuItem);
-    menu.add(importPrimesFileMenuItem);
-    container.add(menuBar);
 
     // create buttons
     running = false;

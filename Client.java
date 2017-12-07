@@ -1,7 +1,7 @@
 
 //Sean Walker - swalke30
-//Bilal V 
-//Matt B
+//Bilal Vajhi - bvajhi2
+//Matt Burkett - mburke24
 //CS 342 Program 5 - Networked Chat with RSA Encryption/Decryption
 
 import java.net.*;
@@ -15,6 +15,9 @@ import java.util.*;
 
 public class Client extends JFrame implements ActionListener {
   // GUI items
+  JMenuBar menuBar;
+  JMenuItem generatePrimesMenuItem;
+  JMenu menu;
   JButton sendButton;
   JButton connectButton;
   JTextField machineInfo;
@@ -51,6 +54,31 @@ public class Client extends JFrame implements ActionListener {
     // get content pane and set its layout
     Container container = getContentPane();
     container.setLayout(new BorderLayout());
+
+    menuBar = new JMenuBar();
+    menu = new JMenu("File");
+    menuBar.add(menu);
+    generatePrimesMenuItem = new JMenuItem("Import Primes");
+
+    generatePrimesMenuItem.addActionListener(new ActionListener(){
+      public void actionPerformed(ActionEvent e){
+         // Referencced from stack overflow 
+        String input = JOptionPane.showInputDialog("Input 2 Primes in the form \"P Q\"");
+        String [] inputParts = input.split(" ");
+        System.out.println("1: " + inputParts[0] + "\n2: " + inputParts[1]);
+
+        long P = Long.valueOf(inputParts[0]);
+        long Q = Long.valueOf(inputParts[1]);
+         
+        Vector<Key> keys = Encryption.generateKeys(P, Q);
+
+        privateKey = keys.get(0);
+        publicKey = keys.get(1);
+      }
+    });
+
+    menu.add(generatePrimesMenuItem);
+    setJMenuBar(menuBar);
 
     // set up the North panel
     JPanel upperPanel = new JPanel();
