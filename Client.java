@@ -31,8 +31,8 @@ public class Client extends JFrame implements ActionListener {
   ObjectInputStream in;
   String userName;
   Vector<String> userNameList;
-  Vector<Key> publicKeyList;
-  Key privateKey; //(d,n)
+  protected Vector<Key> publicKeyList;
+  protected Key privateKey; //(d,n)
   Key publicKey; //(e,n)
   int numberOfUsers;
 
@@ -43,6 +43,10 @@ public class Client extends JFrame implements ActionListener {
     publicKeyList = new Vector<Key>();
     numberOfUsers = 0;
     userNameList = new Vector<String>();
+
+    Vector<Key> keys = Encryption.generateKeys();
+    this.publicKey = keys.get(0);
+    this.privateKey = keys.get(1);
 
     // get content pane and set its layout
     Container container = getContentPane();
@@ -123,19 +127,37 @@ public class Client extends JFrame implements ActionListener {
         //make encryption object and send it...
         String[] namesEnteredInSendMessageToBox = sendMessageTo.getText().split(",");
         Vector<String> recipientList = new Vector<String>();
+        Vector<Key> recipientKeys = new Vector<Key>();
+
+        System.out.println("User Name List on client before sending: " + userNameList);
+        System.out.println("Public Key List on client before sending: ");
+        for (Key k : publicKeyList)
+          System.out.println("\tKey: (" + k.getX() + "," + k.getY() + ")");
 
         for (String username : namesEnteredInSendMessageToBox) {
           recipientList.add(username);
+          //int indexOfUser = userNameList.indexOf(userName);
+          int indexOfUser;
+          for (indexOfUser = 0; indexOfUser < numberOfUsers; indexOfUser++) {
+            if (username.compareTo(userNameList.get(indexOfUser)) == 0)
+              break;
+          }
+          System.out.println(username + " vs " + userNameList.get(indexOfUser));
+          System.out.println("indexOfUser: " + indexOfUser + " -- " + publicKeyList.get(indexOfUser));
+          recipientKeys.add(publicKeyList.get(indexOfUser));
         }
+
+        System.out.println(recipientList);
         Encryption newEncryptedMessage = new Encryption(userName + ": " + message.getText(), recipientList,
-            this.privateKey);
-        try {
-          System.out.println("sending message via out");
-          out.writeObject(newEncryptedMessage);
-          out.flush();
-        } catch (IOException e) {
-          history.insert("cant send ", 0);
-        }
+            recipientKeys);
+        doSendMessage(newEncryptedMessage);
+        // try {
+        //   System.out.println("sending message via out");
+        //   out.writeObject(newEncryptedMessage);
+        //   out.flush();
+        // } catch (IOException e) {
+        //   history.insert("cant send ", 0);
+        // }
       }
     } else if (event.getSource() == connectButton) {
       doManageConnection();
@@ -227,18 +249,33 @@ public class Client extends JFrame implements ActionListener {
 
               //add key to key list here
               String[] elementsOfNewUserString = inputString.split(","); //newUser: <NAME>, first # of key, second # of key
+
+              System.out.println("elements of new user string in client");
+              for (String xxx : elementsOfNewUserString)
+                System.out.println(xxx);
+
               userNameList.add(elementsOfNewUserString[0].substring(9)); //add user name to username list
               numberOfUsers++;
               long x = Long.parseLong(elementsOfNewUserString[1]);
-              long y = Long.parseLong(Character.toString(elementsOfNewUserString[2].charAt(0)));
+              long y = Long.valueOf(elementsOfNewUserString[2].trim());
+              System.out.println("ok?");
+              System.out.println(x);
+              System.out.println(y);
+
+              System.out.println("Elements of new user string:");
+              for (String xx : elementsOfNewUserString)
+                System.out.println(xx);
+
               publicKeyList.add(new Key(x, y));
             } else {
               history.insert(inputString, 0);
             }
 
-          } else {
+          } else { //client recieved encryption object...
             Encryption inputEncryption = (Encryption) input;
-            history.insert(inputEncryption.getMessage() + "\n", 0);
+            String msg = inputEncryption.decrypt(privateKey, userName);
+            System.out.print(msg);
+            history.insert(msg + "\n", 0);
           }
         } //end while ((input = in.readObject()) != null)
       } catch (Exception e) {

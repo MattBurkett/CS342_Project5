@@ -1,6 +1,6 @@
 
 //Sean Walker - swalke30
-//Bilal V - 
+//Bilal Vijha - 
 //Matt B
 //CS 342 Program 5 - Networked Chat with RSA Encryption/Decryption
 
@@ -24,6 +24,10 @@ public class Server extends JFrame implements ActionListener {
   JTextArea history;
   private boolean running;
 
+  JMenuBar menuBar;
+  JMenuItem generatePrimesMenuItem, importPrimesFileMenuItem;
+  JMenu menu;
+
   // Network Items
   boolean serverContinue;
   ServerSocket serverSocket;
@@ -41,6 +45,19 @@ public class Server extends JFrame implements ActionListener {
     // get content pane and set its layout
     Container container = getContentPane();
     container.setLayout(new FlowLayout());
+
+    menuBar = new JMenuBar();
+    menu = new JMenu("File");
+    menuBar.add(menu);
+    generatePrimesMenuItem = new JMenuItem("Generate Primes");
+    importPrimesFileMenuItem = new JMenuItem("Import Primes File");
+    //primesMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1, ActionEvent.ALT_MASK));
+    //primesMenuItem.getAccessibleContext().setAccessibleDescription("Generate Primes");
+    generatePrimesMenuItem.addActionListener(this);
+    importPrimesFileMenuItem.addActionListener(this);
+    menu.add(generatePrimesMenuItem);
+    menu.add(importPrimesFileMenuItem);
+    container.add(menuBar);
 
     // create buttons
     running = false;
@@ -78,7 +95,11 @@ public class Server extends JFrame implements ActionListener {
 
   //handle button event
   public void actionPerformed(ActionEvent event) {
-    if (running == false) {
+    if (event.getSource().equals(generatePrimesMenuItem)) {
+      System.out.println("generate prime code here...");
+    } else if (event.getSource().equals(importPrimesFileMenuItem)) {
+      System.out.println("import primes from file...");
+    } else if (running == false) {
       new ConnectionThread(this);
     } else {
       serverContinue = false;
@@ -157,14 +178,25 @@ public class Server extends JFrame implements ActionListener {
               if (inputString.contains("newUser: ")) {
                 System.out.println("newUser Server section: ");
                 history.insert(inputString + "\n", 0);
-                //add key to keylist
+                //add username to username list and key to keylist:
                 String[] elementsOfNewUserString = inputString.split(",");
+
                 userNameList.add(elementsOfNewUserString[0].substring(9));
                 numberOfUsers++;
+
+                publicKeyList.add(
+                    new Key(Long.parseLong(elementsOfNewUserString[1]), Long.parseLong(elementsOfNewUserString[2])));
 
                 for (ObjectOutputStream writer : writers) { //tell all connected clients there's a new user
                   System.out.println("sending to a writer");
                   writer.writeObject(inputString + "\n");
+                }
+
+                for (String name : userNameList) {
+                  int indexOfUserName = userNameList.indexOf(name);
+                  inputString = "newUser: " + name + "," + publicKeyList.get(indexOfUserName).getX() + ","
+                      + publicKeyList.get(indexOfUserName).getY();
+                  out.writeObject(inputString + "\n");
                 }
 
                 writers.add(out);
@@ -172,7 +204,7 @@ public class Server extends JFrame implements ActionListener {
               } //end if new user
               else if (inputString.contains("whoIsHere")) {
                 System.out.println("in whoishere");
-                String userNameListToSend = null;
+                String userNameListToSend = new String();
                 for (String userName : userNameList) {
                   userNameListToSend = userNameListToSend + userName + ", ";
                 }
@@ -186,7 +218,6 @@ public class Server extends JFrame implements ActionListener {
               Encryption inputEncryption = (Encryption) input;
 
               for (String recipient : inputEncryption.getRecipientList()) { //send message to recipiants
-                history.insert(inputEncryption.getMessage(), 0);
                 int writerIndexForUser = userNameList.indexOf(recipient);
                 System.out.println("writerIndexForUser: " + writerIndexForUser);
                 writers.elementAt(writerIndexForUser).writeObject(inputEncryption);

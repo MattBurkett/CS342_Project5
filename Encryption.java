@@ -20,41 +20,43 @@ public class Encryption implements Serializable {
 	private Vector<String> recipientList; //who is the message for
 	private Vector<Vector<BigInteger>> encryptedMessages;
 
-
-	public Encryption(String message, Vector<String> recipiantList, Vector<Key> publicKeys){
+	public Encryption(String message, Vector<String> recipiantList, Vector<Key> publicKeys) {
 		Encrypt(message, recipiantList, publicKeys);
 	}
 
-	public Encryption(String message, Vector<String> recipiantList, Key publicKey){
+	public Encryption(String message, Vector<String> recipiantList, Key publicKey) {
 		Vector<Key> publicKeys = new Vector<Key>();
 		publicKeys.add(publicKey);
 		Encrypt(message, recipiantList, publicKeys);
 	}
 
 	public void Encrypt(String message, Vector<String> recipiantList, Vector<Key> publicKeys) {
-		
+		System.out.println("\tEncrypting!");
+		for (Key k : publicKeys)
+			System.out.println("\tkey: (" + k.getX() + "," + k.getY() + ")");
+		System.out.println("\trecipiants: " + recipiantList);
 		this.recipientList = recipiantList;
 		this.encryptedMessages = new Vector<Vector<BigInteger>>();
 
 		//do encryption here...
-		char raw [] = message.toCharArray();
+		char raw[] = message.toCharArray();
 
-		for(Key publicKey : publicKeys){
+		for (Key publicKey : publicKeys) {
 			Vector<BigInteger> encryptedMessage = new Vector<BigInteger>();
 			long e = publicKey.getX();
 			long n = publicKey.getY();
 			int i = 0;
-			while(true){
+			while (true) {
 				BigInteger block = BigInteger.valueOf(0);
-				for(int j = i; j < i + Encryption.blockSize; j++){
-					if(raw.length == j)
+				for (int j = i; j < i + Encryption.blockSize; j++) {
+					if (raw.length == j)
 						break;
 					block = block.shiftLeft(7); // *128
-					block = block.add( BigInteger.valueOf(raw[j]) );
+					block = block.add(BigInteger.valueOf(raw[j]));
 				}
 				i += Encryption.blockSize;
 				encryptedMessage.add(powerMod(block, publicKey.getX(), publicKey.getY()));
-				if(i > raw.length)
+				if (i > raw.length)
 					break;
 			}
 			encryptedMessages.add(encryptedMessage);
@@ -108,16 +110,16 @@ public class Encryption implements Serializable {
 		Vector<Key> keys = new Vector<Key>();
 
 		n = p * q;
-		phi = (p-1)*(q-1);
+		phi = (p - 1) * (q - 1);
 
 		long maxE = 5000;
 		double growthRate = 1.1;
-		do{
+		do {
 			e = rng.nextLong() % maxE;
-			maxE = (long)(maxE>=n?n:maxE*growthRate);
-		}while(Encryption.GCD(e,phi) != 1);
+			maxE = (long) (maxE >= n ? n : maxE * growthRate);
+		} while (Encryption.GCD(e, phi) != 1);
 
-		d = Encryption.MIV(e,phi);
+		d = Encryption.MIV(e, phi);
 
 		BigInteger Be = BigInteger.valueOf(e);
 		BigInteger Bd = BigInteger.valueOf(d);
@@ -127,17 +129,24 @@ public class Encryption implements Serializable {
 		Key privateKey = new Key(d, n);
 		keys.add(publicKey);
 		keys.add(privateKey);
+
+		System.out.println("Keys: (" + e + "," + n + "), (" + d + "," + n + ")");
+
 		return keys;
 	}
 
 	public String decrypt(Key key, String name) {
+		System.out.println("Decrypting!");
+		System.out.println("\tkey: (" + key.getX() + "," + key.getY() + ")");
+		System.out.println("\trecipiant: " + name);
+
 		int index = recipientList.indexOf(name);
 		String decryptedMessage = "";
-		for(BigInteger block : encryptedMessages.get(index)){
+		for (BigInteger block : encryptedMessages.get(index)) {
 			String decryptedBlock = "";
 			block = powerMod(block, key.getX(), key.getY());
-			for(int i = 0; i < Encryption.blockSize; i++){
-				decryptedBlock += (char)block.and(BigInteger.valueOf(0x7F)).intValue();
+			for (int i = 0; i < Encryption.blockSize; i++) {
+				decryptedBlock += (char) block.and(BigInteger.valueOf(0x7F)).intValue();
 				block = block.shiftRight(7);
 			}
 			char reversed [] = decryptedBlock.toCharArray();
@@ -159,12 +168,12 @@ public class Encryption implements Serializable {
 		return "DID NOT DECRYPT! USE `decrypt()`";
 	}
 
-	private static BigInteger powerMod(BigInteger base, long e, long m){
+	private static BigInteger powerMod(BigInteger base, long e, long m) {
 		BigInteger exponent = BigInteger.valueOf(e);
 		BigInteger modulus = BigInteger.valueOf(m);
 		BigInteger result = BigInteger.valueOf(1);
-		while(exponent.compareTo(BigInteger.valueOf(0)) > 0){
-			if(exponent.mod( BigInteger.valueOf(2) ).compareTo( BigInteger.valueOf(1) ) == 0)
+		while (exponent.compareTo(BigInteger.valueOf(0)) > 0) {
+			if (exponent.mod(BigInteger.valueOf(2)).compareTo(BigInteger.valueOf(1)) == 0)
 				result = result.multiply(base).mod(modulus);
 			exponent = exponent.shiftRight(1);
 			base = base.multiply(base).mod(modulus);
@@ -173,24 +182,24 @@ public class Encryption implements Serializable {
 	}
 
 	// Eculidean algorithm
-	private static long GCD(long a, long b){
+	private static long GCD(long a, long b) {
 		Vector<Long> r = new Vector<Long>();
-		r.add(a>b?a:b);
-		r.add(a>b?b:a);
+		r.add(a > b ? a : b);
+		r.add(a > b ? b : a);
 
-		while(r.lastElement() > 0)
-			r.add(r.get(r.size()-2) % r.lastElement());
+		while (r.lastElement() > 0)
+			r.add(r.get(r.size() - 2) % r.lastElement());
 
-		return r.get(r.size()-2);
+		return r.get(r.size() - 2);
 	}
 
 	// Extended Eculidean algorithm
 	// https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm#Computing_multiplicative_inverses_in_modular_structures
-	private static long MIV(long a, long n){
+	private static long MIV(long a, long n) {
 		long q, prevr, prevt;
 		long t = 0, r = n, newt = 1, newr = a;
 
-		while(newr != 0){
+		while (newr != 0) {
 			q = r / newr;
 
 			prevt = t;
@@ -201,18 +210,18 @@ public class Encryption implements Serializable {
 			r = newr;
 			newr = prevr - q * newr;
 		}
-		if(r > 1){
+		if (r > 1) {
 			System.out.println("a is not invertible");
 			System.exit(0);
 		}
-		if(t < 0)
+		if (t < 0)
 			t += n;
 
 		return t;
 	}
 
 	//used for testing, should execute client or server
-	public static void main(String [] args){
+	public static void main(String[] args) {
 		Vector<Key> keys = Encryption.generateKeys();
 		Key mattPublic = keys.get(0);
 		Key mattPrivate = keys.get(1);
@@ -221,11 +230,12 @@ public class Encryption implements Serializable {
 		Key seanPublic = keys.get(0);
 		Key seanPrivate = keys.get(1);
 
+		System.out.println("");
 		System.out.println("public  (Matt): " + mattPublic.getX() + ", " + mattPublic.getY());
 		System.out.println("private (Matt): " + mattPrivate.getX() + ", " + mattPrivate.getY());
 		System.out.println("public  (Sean): " + seanPublic.getX() + ", " + seanPublic.getY());
 		System.out.println("private (Sean): " + seanPrivate.getX() + ", " + seanPrivate.getY());
-
+		System.out.println("");
 
 		Vector<Key> recipientKeys = new Vector<Key>();
 		recipientKeys.add(mattPublic);
@@ -238,7 +248,7 @@ public class Encryption implements Serializable {
 		System.out.println("Encrypting message: " + message);
 		Encryption secret = new Encryption(message, recipientNames, recipientKeys);
 		System.out.println("Decrypted message: " + secret.decrypt(mattPrivate, "Matt"));
-		
+
 		return;
 	}
 }
