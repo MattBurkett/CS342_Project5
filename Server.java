@@ -1,6 +1,6 @@
 
 //Sean Walker - swalke30
-//Bilal V - 
+//Bilal Vijha - 
 //Matt B
 //CS 342 Program 5 - Networked Chat with RSA Encryption/Decryption
 
@@ -24,6 +24,10 @@ public class Server extends JFrame implements ActionListener {
   JTextArea history;
   private boolean running;
 
+  JMenuBar menuBar;
+  JMenuItem generatePrimesMenuItem, importPrimesFileMenuItem;
+  JMenu menu;
+
   // Network Items
   boolean serverContinue;
   ServerSocket serverSocket;
@@ -41,6 +45,19 @@ public class Server extends JFrame implements ActionListener {
     // get content pane and set its layout
     Container container = getContentPane();
     container.setLayout(new FlowLayout());
+
+    menuBar = new JMenuBar();
+    menu = new JMenu("File");
+    menuBar.add(menu);
+    generatePrimesMenuItem = new JMenuItem("Generate Primes");
+    importPrimesFileMenuItem = new JMenuItem("Import Primes File");
+    //primesMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1, ActionEvent.ALT_MASK));
+    //primesMenuItem.getAccessibleContext().setAccessibleDescription("Generate Primes");
+    generatePrimesMenuItem.addActionListener(this);
+    importPrimesFileMenuItem.addActionListener(this);
+    menu.add(generatePrimesMenuItem);
+    menu.add(importPrimesFileMenuItem);
+    container.add(menuBar);
 
     // create buttons
     running = false;
@@ -78,7 +95,11 @@ public class Server extends JFrame implements ActionListener {
 
   //handle button event
   public void actionPerformed(ActionEvent event) {
-    if (running == false) {
+    if (event.getSource().equals(generatePrimesMenuItem)) {
+      System.out.println("generate prime code here...");
+    } else if (event.getSource().equals(importPrimesFileMenuItem)) {
+      System.out.println("import primes from file...");
+    } else if (running == false) {
       new ConnectionThread(this);
     } else {
       serverContinue = false;
