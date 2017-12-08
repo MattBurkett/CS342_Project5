@@ -18,12 +18,15 @@ import java.util.Vector;
 
 public class Server extends JFrame implements ActionListener {
   // GUI items
+  JMenuBar menuBar;
   JButton ssButton;
   JLabel machineInfo;
   JLabel portInfo;
   JTextArea history;
   private boolean running;
-
+  JMenu about;
+  JMenuItem info;
+  JMenuItem help;
   JMenuItem generatePrimesMenuItem, importPrimesFileMenuItem;
   JMenu menu;
 
@@ -44,6 +47,37 @@ public class Server extends JFrame implements ActionListener {
     // get content pane and set its layout
     Container container = getContentPane();
     container.setLayout(new FlowLayout());
+
+    //add about menu
+    menuBar = new JMenuBar();
+    about = new JMenu("About");
+    info = new JMenuItem("Info");
+    help = new JMenuItem("Help");
+
+    info.addActionListener(new ActionListener() {
+
+      public void actionPerformed(ActionEvent e) {
+        JOptionPane.showMessageDialog(container,
+            "Authors:\nSean Walker - swalke30\n Bilal Vajhi - bvajhi2\nMatt Burkett - mburke24");
+      }
+    });
+
+    about.add(info);
+
+    help.addActionListener(new ActionListener() {
+
+      public void actionPerformed(ActionEvent e) {
+        JOptionPane.showMessageDialog(container,
+            "File->Import Primes: Primes must be >= 101 because of checkPrime() doesn't work for small 'n'"
+                + "\nSend message to: Should be comma seperated list of recipents with no spaces"
+                + "\n example: \"Matt,Sean,Bilal\"");
+      }
+    });
+    about.add(help);
+
+    menuBar.add(about);
+
+    setJMenuBar(menuBar);
 
     // create buttons
     running = false;

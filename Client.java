@@ -26,6 +26,9 @@ public class Client extends JFrame implements ActionListener {
   JTextField sendMessageTo;
   JTextField enterUserName;
   JTextArea history;
+  JMenu about;
+  JMenuItem info;
+  JMenuItem help;
 
   // Network Items
   boolean connected;
@@ -77,6 +80,32 @@ public class Client extends JFrame implements ActionListener {
       }
     });
 
+    about = new JMenu("About");
+    info = new JMenuItem("Info");
+    help = new JMenuItem("Help");
+
+    info.addActionListener(new ActionListener() {
+
+      public void actionPerformed(ActionEvent e) {
+        JOptionPane.showMessageDialog(container,
+            "Authors:\nSean Walker - swalke30\n Bilal Vajhi - bvajhi2\nMatt Burkett - mburke24");
+      }
+    });
+
+    about.add(info);
+
+    help.addActionListener(new ActionListener() {
+
+      public void actionPerformed(ActionEvent e) {
+        JOptionPane.showMessageDialog(container,
+            "File->Import Primes: Primes must be >= 101 because of checkPrime() doesn't work for small 'n'"
+                + "\nSend message to: Should be comma seperated list of recipents with no spaces"
+                + "\n example: \"Matt,Sean,Bilal\"");
+      }
+    });
+    about.add(help);
+
+    menuBar.add(about);
     menu.add(generatePrimesMenuItem);
     setJMenuBar(menuBar);
 
@@ -324,7 +353,7 @@ public class Client extends JFrame implements ActionListener {
           }
         } //end while ((input = in.readObject()) != null)
       } catch (Exception e) {
-        if(e.getMessage().compareTo("Socket closed") == 0){
+        if (e.getMessage().compareTo("Socket closed") == 0) {
           return;
         }
         e.printStackTrace(System.out);
