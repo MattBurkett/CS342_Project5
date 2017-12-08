@@ -50,9 +50,9 @@ public class Client extends JFrame implements ActionListener {
     numberOfUsers = 0;
     userNameList = new Vector<String>();
 
-    // Vector<Key> keys = Encryption.generateKeys();
-    // this.publicKey = keys.get(0);
-    // this.privateKey = keys.get(1);
+    Vector<Key> keys = Encryption.generateKeys();
+    this.publicKey = keys.get(0);
+    this.privateKey = keys.get(1);
 
     // get content pane and set its layout
     Container container = getContentPane();
@@ -250,9 +250,10 @@ public class Client extends JFrame implements ActionListener {
         sendButton.setEnabled(true);
         connected = true;
         //to do: recieve user name from server
-        Vector<Key> publicPrivateKeys = Encryption.generateKeys();
-        this.publicKey = publicPrivateKeys.get(0);
-        this.privateKey = publicPrivateKeys.get(1);
+        // Vector<Key> publicPrivateKeys = Encryption.generateKeys();
+        // this.publicKey = publicPrivateKeys.get(0);
+        // this.privateKey = publicPrivateKeys.get(1);
+        
         String newUserString = "newUser: " + userName + "," + Long.toString(publicKey.getX()) + ","
             + Long.toString(publicKey.getY());
         System.out.println(newUserString);
