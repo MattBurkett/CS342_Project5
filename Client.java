@@ -47,9 +47,9 @@ public class Client extends JFrame implements ActionListener {
     numberOfUsers = 0;
     userNameList = new Vector<String>();
 
-    Vector<Key> keys = Encryption.generateKeys();
-    this.publicKey = keys.get(0);
-    this.privateKey = keys.get(1);
+    // Vector<Key> keys = Encryption.generateKeys();
+    // this.publicKey = keys.get(0);
+    // this.privateKey = keys.get(1);
 
     // get content pane and set its layout
     Container container = getContentPane();
@@ -124,7 +124,7 @@ public class Client extends JFrame implements ActionListener {
     history.setEditable(false);
     container.add(new JScrollPane(history), BorderLayout.CENTER);
 
-    setSize(500, 250);
+    setSize(500, 350);
     setVisible(true);
 
   } // end constructor
@@ -248,6 +248,7 @@ public class Client extends JFrame implements ActionListener {
         sendButton.setEnabled(false);
         connected = false;
         connectButton.setText("Connect to Server");
+        return;
       } catch (IOException e) {
         history.insert("Error in closing down Socket ", 0);
       }
@@ -270,7 +271,7 @@ public class Client extends JFrame implements ActionListener {
 
         // Process all messages from server, according to the protocol.
         Object input;
-        while ((input = in.readObject()) != null) {
+        while (in != null && (input = in.readObject()) != null) {
           if (input.getClass().equals(String.class)) {
             String inputString = (String) input;
             if (inputString.contains("newUser: ")) {
@@ -301,8 +302,9 @@ public class Client extends JFrame implements ActionListener {
 
             else if (inputString.contains("isLeaving!")) {
               history.insert(inputString, 0);
-              String username = inputString.substring(10);
+              String username = inputString.substring(11).trim();
               int indexOfUser;
+              System.out.println(username);
               for (indexOfUser = 0; indexOfUser < numberOfUsers; indexOfUser++) {
                 if (username.compareTo(userNameList.get(indexOfUser)) == 0)
                   break;
@@ -322,6 +324,10 @@ public class Client extends JFrame implements ActionListener {
           }
         } //end while ((input = in.readObject()) != null)
       } catch (Exception e) {
+        if(e.getMessage().compareTo("Socket closed") == 0){
+          return;
+        }
+        e.printStackTrace(System.out);
         System.out.println(e);
       }
     }//end run()

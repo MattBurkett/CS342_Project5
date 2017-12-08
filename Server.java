@@ -189,7 +189,8 @@ public class Server extends JFrame implements ActionListener {
                 System.out.println("added new ObjectOutputStream to writers");
               } //end if new user
               else if (inputString.contains("isLeaving!")) {
-                String username = inputString.substring(10);
+                String username = inputString.substring(11);
+                System.out.println(username);
 
                 int indexOfUser;
                 for (indexOfUser = 0; indexOfUser < numberOfUsers; indexOfUser++) {
@@ -201,7 +202,7 @@ public class Server extends JFrame implements ActionListener {
                 for (ObjectOutputStream writer : writers) { //tell all connected clients there's a new user
                   writer.writeObject(inputString + "\n");
                 }
-
+                return;
               } else if (inputString.contains("whoIsHere")) {
                 System.out.println("in whoishere");
                 String userNameListToSend = new String();
@@ -234,6 +235,7 @@ public class Server extends JFrame implements ActionListener {
         in.close();
         clientSocket.close();
       } catch (IOException e) {
+        e.printStackTrace(System.out);
         System.err.println("Problem with Communication Server");
         //System.exit(1); 
       }
