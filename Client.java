@@ -60,16 +60,16 @@ public class Client extends JFrame implements ActionListener {
     menuBar.add(menu);
     generatePrimesMenuItem = new JMenuItem("Import Primes");
 
-    generatePrimesMenuItem.addActionListener(new ActionListener(){
-      public void actionPerformed(ActionEvent e){
-         // Referencced from stack overflow 
+    generatePrimesMenuItem.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        // Referencced from stack overflow 
         String input = JOptionPane.showInputDialog("Input 2 Primes in the form \"P Q\"");
-        String [] inputParts = input.split(" ");
+        String[] inputParts = input.split(" ");
         System.out.println("1: " + inputParts[0] + "\n2: " + inputParts[1]);
 
         long P = Long.valueOf(inputParts[0]);
         long Q = Long.valueOf(inputParts[1]);
-         
+
         Vector<Key> keys = Encryption.generateKeys(P, Q);
 
         privateKey = keys.get(0);
@@ -241,6 +241,7 @@ public class Client extends JFrame implements ActionListener {
 
     } else {
       try {
+        out.writeObject("isLeaving! " + userName);
         out.close();
         in.close();
         echoSocket.close();
@@ -295,6 +296,20 @@ public class Client extends JFrame implements ActionListener {
                 System.out.println(xx);
 
               publicKeyList.add(new Key(x, y));
+
+            }
+
+            else if (inputString.contains("isLeaving!")) {
+              history.insert(inputString, 0);
+              String username = inputString.substring(10);
+              int indexOfUser;
+              for (indexOfUser = 0; indexOfUser < numberOfUsers; indexOfUser++) {
+                if (username.compareTo(userNameList.get(indexOfUser)) == 0)
+                  break;
+              }
+              userNameList.remove(indexOfUser);
+              publicKeyList.remove(indexOfUser);
+
             } else {
               history.insert(inputString, 0);
             }

@@ -45,7 +45,6 @@ public class Server extends JFrame implements ActionListener {
     Container container = getContentPane();
     container.setLayout(new FlowLayout());
 
-
     // create buttons
     running = false;
     ssButton = new JButton("Start Listening");
@@ -189,7 +188,21 @@ public class Server extends JFrame implements ActionListener {
                 writers.add(out);
                 System.out.println("added new ObjectOutputStream to writers");
               } //end if new user
-              else if (inputString.contains("whoIsHere")) {
+              else if (inputString.contains("isLeaving!")) {
+                String username = inputString.substring(10);
+
+                int indexOfUser;
+                for (indexOfUser = 0; indexOfUser < numberOfUsers; indexOfUser++) {
+                  if (username.compareTo(userNameList.get(indexOfUser)) == 0)
+                    break;
+                }
+                writers.remove(indexOfUser);
+                userNameList.remove(indexOfUser);
+                for (ObjectOutputStream writer : writers) { //tell all connected clients there's a new user
+                  writer.writeObject(inputString + "\n");
+                }
+
+              } else if (inputString.contains("whoIsHere")) {
                 System.out.println("in whoishere");
                 String userNameListToSend = new String();
                 for (String userName : userNameList) {
